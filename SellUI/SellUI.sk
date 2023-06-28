@@ -2,10 +2,17 @@ options:
     Version: 2.0
     File: plugins/Skript/scripts/SellUI
 
+#==============================
+#
+#    請不要更改此份文件
+#
+#==============================
+
 import:
     java.io.File
     java.net.URL
     java.util.Scanner
+    java.util.ArrayList
     
     de.unpixelt.locale.Translate
 
@@ -14,6 +21,7 @@ import:
     org.bukkit.block.ShulkerBox
     org.bukkit.inventory.ItemStack
     org.bukkit.inventory.meta.BlockStateMeta
+    org.bukkit.event.server.TabCompleteEvent
     org.bukkit.configuration.file.YamlConfiguration
 
 option System:
@@ -22,6 +30,9 @@ option System:
 option InvName:
     get:
         return YamlConfiguration.loadConfiguration(new File("{@File}/Config.yml")).get("Settings.InvName")
+option CheckVersion:
+    get:
+        return YamlConfiguration.loadConfiguration(new File("{@File}/Config.yml")).get("Settings.CheckVersion")
 option Permission_Set:
     get:
         return YamlConfiguration.loadConfiguration(new File("{@File}/Config.yml")).get("Permission.Set")
@@ -34,6 +45,8 @@ option Permission_Reload:
 
 on load:
     SellUI_reload()
+    loop all players where [input has permission "{@Permission_Reload}"]:
+        checkVersion(loop-value)
 
 function SellUI_reload():
     set {_Folder} to new File("{@File}")
@@ -57,6 +70,9 @@ function SellUI_reload():
     if {_YML}.isSet("Settings.InvName") is false:
         {_YML}.set("Settings.InvName","&9&l物品販售選單")
         set {_save} to true
+    if {_YML}.isSet("Settings.CheckVersion") is false:
+        {_YML}.set("Settings.CheckVersion",true)
+        set {_save} to true
     if {_YML}.isSet("Permission.Set") is false:
         {_YML}.set("Permission.Set","SellUI.Admin")
         set {_save} to true
@@ -68,11 +84,37 @@ function SellUI_reload():
         set {_save} to true
     {_save} is true:
         {_YML}.save({_File})
+    
 
-function checkVersion():
-    set {_url} to new URL("https://raw.githubusercontent.com/Cang1017/CangScripts/main/SellUI/SellUI.sk")
-    set {_scanner} to new Scanner({_url}.openStream())
-    broadcast "%{_scanner}.nextLine()%"
+function checkVersion(p: Player = "!console" parsed as player):
+    {@CheckVersion} is true:
+        set {_url} to new URL("https://raw.githubusercontent.com/Cang1017/CangScripts/main/SellUI/SellUI.sk")
+        set {_scanner} to new Scanner({_url}.openStream())
+        wait 10 tick
+        set {_v} to {_scanner}.nextLine()
+        set {_v} to {_scanner}.nextLine()
+        replace all "    Version: " in {_v} with ""
+        set {_v} to {_v} parsed as number
+        {_p} is not "!console":
+            if {_v} > {@Version}:
+                send "&6[SellUI.sk]&f 發現新版本 %{_v}% 目前的版本: {@Version} <url:https://github.com/Cang1017/CangScripts/blob/main/SellUI/SellUI.sk>&a[點擊更新]<reset>" to {_p}
+
+on TabCompleteEvent:
+    set {_args::*} to event.getBuffer() split at " "
+    {_args::1} is "/sellui"
+    set {_TabComplete} to new ArrayList()
+    {_args::2} is "set":
+        event.getSender() have permission "{@Permission_Set}":
+            {_TabComplete}.add("<手上物品的價格>")
+            event.setCompletions({_TabComplete})
+    else:
+        {_args::3} is not set:
+            event.getSender() have permission "{@Permission_Set}":
+                {_TabComplete}.add("set")
+            event.getSender() have permission "{@Permission_Reload}":
+                {_TabComplete}.add("reload")
+            {_TabComplete} is set:
+                event.setCompletions({_TabComplete})
 
 command /SellUI [<text>] [<text>]:
     trigger:
@@ -80,6 +122,7 @@ command /SellUI [<text>] [<text>]:
             if player have permission "{@Permission_Reload}":
                 SellUI_reload()
                 send "{@System} &a重新載入完成."
+                checkVersion(player)
             stop
         arg 1 is "set":
             if player have permission "{@Permission_Set}":
