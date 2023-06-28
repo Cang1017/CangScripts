@@ -1,35 +1,96 @@
 options:
-    System: &f&l╭&c&l[&b&l!&c&l]&e&l◢ 
-    Inv: &9&l物品販售選單
-    File: plugins/Skript/scripts/SellUI/Items.yml
+    Version: 2.0
+    File: plugins/Skript/scripts/SellUI
+
 import:
     java.io.File
+    java.net.URL
+    java.util.Scanner
+    
+    de.unpixelt.locale.Translate
+
     org.bukkit.Bukkit
     org.bukkit.Material
     org.bukkit.block.ShulkerBox
-    de.unpixelt.locale.Translate
     org.bukkit.inventory.ItemStack
     org.bukkit.inventory.meta.BlockStateMeta
     org.bukkit.configuration.file.YamlConfiguration
+
+option System:
+    get:
+        return YamlConfiguration.loadConfiguration(new File("{@File}/Config.yml")).get("Settings.System")
+option InvName:
+    get:
+        return YamlConfiguration.loadConfiguration(new File("{@File}/Config.yml")).get("Settings.InvName")
+option Permission_Set:
+    get:
+        return YamlConfiguration.loadConfiguration(new File("{@File}/Config.yml")).get("Permission.Set")
+option Permission_Use:
+    get:
+        return YamlConfiguration.loadConfiguration(new File("{@File}/Config.yml")).get("Permission.Use")
+option Permission_Reload:
+    get:
+        return YamlConfiguration.loadConfiguration(new File("{@File}/Config.yml")).get("Permission.Reload")
+
 on load:
-    set {_File} to new File("{@File}")
+    SellUI_reload()
+
+function SellUI_reload():
+    set {_Folder} to new File("{@File}")
+    if {_Folder}.exists() is not true:
+        {_Folder}.mkdirs()
+        send "&a[Sell.sk] 找不到 .../SellUI/  創建 .../SellUI/ 中..." to console
+    set {_File} to new File("{@File}/Items.yml")
     if {_File}.exists() is not true:
         {_File}.createNewFile()
-        send "&a[Sell.sk] Could not find Items.yml.  Creating Items.yml" to console
+        send "&a[Sell.sk] 找不到 Items.yml  創建 Items.yml 中..." to console
+   #Config
+    set {_File} to new File("{@File}/Config.yml")
+    if {_File}.exists() is not true:
+        {_File}.createNewFile()
+        send "&a[Sell.sk] 找不到 Config.yml  創建 Config.yml 中..." to console
 
+    set {_YML} to YamlConfiguration.loadConfiguration({_File})
+    if {_YML}.isSet("Settings.System") is false:
+        {_YML}.set("Settings.System","&f&l╭&c&l[&b&l!&c&l]&e&l◢ ")
+        set {_save} to true
+    if {_YML}.isSet("Settings.InvName") is false:
+        {_YML}.set("Settings.InvName","&9&l物品販售選單")
+        set {_save} to true
+    if {_YML}.isSet("Permission.Set") is false:
+        {_YML}.set("Permission.Set","SellUI.Admin")
+        set {_save} to true
+    if {_YML}.isSet("Permission.Reload") is false:
+        {_YML}.set("Permission.Reload","SellUI.Admin")
+        set {_save} to true
+    if {_YML}.isSet("Permission.Use") is false:
+        {_YML}.set("Permission.Use","SellUI.Use")
+        set {_save} to true
+    {_save} is true:
+        {_YML}.save({_File})
+
+function checkVersion():
+    set {_url} to new URL("https://raw.githubusercontent.com/Cang1017/CangScripts/main/SellUI/SellUI.sk")
+    set {_scanner} to new Scanner({_url}.openStream())
+    broadcast "%{_scanner}.nextLine()%"
 
 command /SellUI [<text>] [<text>]:
     trigger:
+        arg 1 is "reload":
+            if player have permission "{@Permission_Reload}":
+                SellUI_reload()
+                send "{@System} &a重新載入完成."
+            stop
         arg 1 is "set":
-            if player have permission "SellUI.admin":
+            if player have permission "{@Permission_Set}":
                 set {_arg2} to arg 2 parsed as number
                 if player's tool is air:
                     send "{@System} &c請將欲設定物品拿在主手"
                 else if {_arg2} is set:
-                    set {_YML} to YamlConfiguration.loadConfiguration(new File("{@File}"))
+                    set {_YML} to YamlConfiguration.loadConfiguration(new File("{@File}/Items.yml"))
                     set {_i} to player's tool
                     {_YML}.set("%{_i}.getType()%",{_arg2})
-                    {_YML}.save(new File("{@File}"))
+                    {_YML}.save(new File("{@File}/Items.yml"))
                     send "{@System} &a物品設置完成"
                 else:
                     send "{@System} &c用法: /SellUI set <wepon price>"
@@ -37,8 +98,8 @@ command /SellUI [<text>] [<text>]:
             else:
                 send "{@System} &c您沒有權限使用這個指令"
         else:
-            if player have permission "Sellui.use":
-                open chest inventory with 6 rows named "{@Inv}" to player
+            if player have permission "{@Permission_Use}":
+                open chest inventory with 6 rows named "{@InvName}" to player
                 if {sound::%player%} is true:
                     play sound "minecraft:entity.item.pickup" to player
                     delete {sound::%player%}
@@ -57,7 +118,7 @@ command /SellUI [<text>] [<text>]:
                     set slot 45 of {_inv} to axolotl bucket named "&f販售界伏盒物品&c ┓" with lore " " and "&b┗ &e目前狀態為 &a開啟"
                 else:
                     set slot 45 of {_inv} to water bucket named "&f販售界伏盒物品&c ┓" with lore " " and "&b┗ &e目前狀態為 &c關閉"
-                set {_YML} to YamlConfiguration.loadConfiguration(new File("{@File}"))
+                set {_YML} to YamlConfiguration.loadConfiguration(new File("{@File}/Items.yml"))
                 loop all items in player's inventory where [ {_YML}.get("%input.getItem().getType()%") is set ]:
                     loop-value.getItem().hasItemMeta() is false:
                         set {_items::%type of loop-value%} to type of loop-value
@@ -86,10 +147,10 @@ command /SellUI [<text>] [<text>]:
             else:
                 send "{@System} &c您沒有權限使用這個指令"
 on inventory click:
-    if name of player's current inventory is "{@Inv}":
+    if name of player's current inventory is "{@InvName}":
         cancel event
         clicked inventory is not player's inventory
-        set {_YML} to YamlConfiguration.loadConfiguration(new File("{@File}"))
+        set {_YML} to YamlConfiguration.loadConfiguration(new File("{@File}/Items.yml"))
         event-item is set
         clicked slot <= 43:
             clicked slot >= 9
