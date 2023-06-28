@@ -1,0 +1,185 @@
+options:
+    System: &f&l╭&c&l[&b&l!&c&l]&e&l◢ 
+    Inv: &9&l物品販售選單
+    File: plugins/Skript/scripts/SellUI/Items.yml
+import:
+    java.io.File
+    org.bukkit.Bukkit
+    org.bukkit.Material
+    org.bukkit.block.ShulkerBox
+    de.unpixelt.locale.Translate
+    org.bukkit.inventory.ItemStack
+    org.bukkit.inventory.meta.BlockStateMeta
+    org.bukkit.configuration.file.YamlConfiguration
+on load:
+    set {_File} to new File("{@File}")
+    if {_File}.exists() is not true:
+        {_File}.createNewFile()
+        send "&a[Sell.sk] Could not find Items.yml.  Creating Items.yml" to console
+
+
+command /SellUI [<text>] [<text>]:
+    trigger:
+        arg 1 is "set":
+            if player have permission "SellUI.admin":
+                set {_arg2} to arg 2 parsed as number
+                if player's tool is air:
+                    send "{@System} &c請將欲設定物品拿在主手"
+                else if {_arg2} is set:
+                    set {_YML} to YamlConfiguration.loadConfiguration(new File("{@File}"))
+                    set {_i} to player's tool
+                    {_YML}.set("%{_i}.getType()%",{_arg2})
+                    {_YML}.save(new File("{@File}"))
+                    send "{@System} &a物品設置完成"
+                else:
+                    send "{@System} &c用法: /SellUI set <wepon price>"
+                stop
+            else:
+                send "{@System} &c您沒有權限使用這個指令"
+        else:
+            if player have permission "Sellui.use":
+                open chest inventory with 6 rows named "{@Inv}" to player
+                if {sound::%player%} is true:
+                    play sound "minecraft:entity.item.pickup" to player
+                    delete {sound::%player%}
+                else:
+                    play sound "minecraft:item.book.page_turn" to player
+                set {_inv} to current inventory of player
+                loop 9 times:
+                    set slot 9 - loop-value of {_inv} to black glass pane named "&0"
+                    set slot 54 - loop-value of {_inv} to black glass pane named "&0"
+                if {check::%player%} is true:
+                    set slot 53 of {_inv} to cherry chest boat named "&f販售身上全部的物品&c ┓" with lore " " and "&b┗ &e點擊販售 &d包含界伏盒"
+                else:
+                    set slot 53 of {_inv} to cherry boat named "&f販售身上全部的物品&c ┓" with lore " " and "&b┗ &e點擊販售 &7不含界伏盒"
+                set slot 49 of {_inv} to structure void named "&f關閉選單&c ┓" with lore " " and "&b┗ &e點擊關閉"
+                if {check::%player%} is true:
+                    set slot 45 of {_inv} to axolotl bucket named "&f販售界伏盒物品&c ┓" with lore " " and "&b┗ &e目前狀態為 &a開啟"
+                else:
+                    set slot 45 of {_inv} to water bucket named "&f販售界伏盒物品&c ┓" with lore " " and "&b┗ &e目前狀態為 &c關閉"
+                set {_YML} to YamlConfiguration.loadConfiguration(new File("{@File}"))
+                loop all items in player's inventory where [ {_YML}.get("%input.getItem().getType()%") is set ]:
+                    loop-value.getItem().hasItemMeta() is false:
+                        set {_items::%type of loop-value%} to type of loop-value
+                        set {_items::%type of loop-value%::type} to loop-value.getItem().getType()
+                        add item amount of loop-value to {_items::%type of loop-value%::amount}
+                if {check::%player%} is true:
+                    loop all items in player's inventory where [ type of input is any shulker box ]:
+                        set {_box} to loop-value.getItem().getItemMeta().getBlockState().getInventory().getContents()
+                        loop ...{_box}:
+                            loop-value-2.hasItemMeta() is false:
+                                if {_YML}.get("%loop-value-2.getType()%") is set:
+                                    set {_items::%type of new ItemStack(loop-value-2.getType(),1)%} to type of new ItemStack(loop-value-2.getType(),1)
+                                    set {_items::%type of new ItemStack(loop-value-2.getType(),1)%::type} to loop-value-2.getType()
+                                    add loop-value-2.getAmount() to {_items::%type of new ItemStack(loop-value-2.getType(),1)%::amount}
+                set {_pos} to 9
+                loop {_items::*}:
+                    set {_Price} to {_YML}.get("%{_items::%loop-value%::type}%")
+                    set {_Name} to Translate.getMaterial(player, {_items::%loop-value%::type})
+                    set {_amount} to {_items::%loop-value%::amount}
+                    if {check::%player%} is true:
+                        set slot {_pos} of {_inv} to loop-value named "&7&l| &f%{_Name}%" with lore "%nl%&f&l| &6販售單價 &7&l▸ &e$%{_Price}%%nl%%nl%&f&l| &b目前持有 &7&l▸ &cx %{_amount}% &d➩ 包含界伏盒%nl%%nl%&f&l| &a滑鼠左鍵或右鍵點擊販售" 
+                    else:
+                        set slot {_pos} of {_inv} to loop-value named "&7&l| &f%{_Name}%" with lore "%nl%&f&l| &6販售單價 &7&l▸ &e$%{_Price}%%nl%%nl%&f&l| &b目前持有 &7&l▸ &cx %{_amount}%%nl%%nl%&f&l| &a滑鼠左鍵或右鍵點擊販售" 
+                    add 1 to {_pos}
+                stop
+            else:
+                send "{@System} &c您沒有權限使用這個指令"
+on inventory click:
+    if name of player's current inventory is "{@Inv}":
+        cancel event
+        clicked inventory is not player's inventory
+        set {_YML} to YamlConfiguration.loadConfiguration(new File("{@File}"))
+        event-item is set
+        clicked slot <= 43:
+            clicked slot >= 9
+            set {_Price} to {_YML}.get("%event-item.getType()%")
+            loop all items in player's inventory where [ input.getItem().getType() is event-item.getType() ]:
+                loop-value.getItem().hasItemMeta() is false:
+                    add item amount of loop-value * {_Price} to {_money}
+                    remove loop-value from player's inventory
+            if {check::%player%} is true:
+                loop all items in player's inventory where [ type of input is any shulker box ]:
+                    set {_item} to loop-value.getItem()
+                    set {_meta} to {_item}.getItemMeta()
+                    set {_BState} to {_meta}.getBlockState()
+                    set {_inv} to {_BState}.getInventory()
+                    loop 27 times:
+                        set {_Slot} to loop-value-2 - 1
+                        {_inv}.getItem({_Slot}).hasItemMeta() is false:
+                            {_inv}.getItem({_Slot}).getType() is event-item.getType():
+                                add {_inv}.getItem({_Slot}).getAmount() * {_Price} to {_money}
+                                {_inv}.setItem({_Slot},new ItemStack(Material.AIR))
+                    {_meta}.setBlockState({_BState})
+                    {_item}.setItemMeta({_meta})
+                    loop-value.setItem({_item})
+            add {_money} to account of player
+            set {_Name} to name of clicked slot
+            replace all "&7&l| &f" in {_Name} with ""
+            set {_amount} to line 4 of lore of clicked slot
+            replace all "&f&l| &b目前持有 &7&l▸ &cx " in {_amount} with ""
+            replace all " &d➩ 包含界伏盒" in {_amount} with ""
+            send "{@System} &d交易明細 &7- &a&l[+] &e$%{_money}% &7| &c&l[-] &b%{_Name}% x %{_amount}%"
+            play sound "minecraft:entity.item.pickup" to player
+            close player's inventory
+            stop
+        clicked slot = 45:
+            if {check::%player%} is not true:
+                set {check::%player%} to true
+            else if {check::%player%} is true:
+                delete {check::%player%}
+            set {sound::%player%} to true
+            make player execute command "/sellui"
+            stop
+        clicked slot = 53:
+            loop all items in player's inventory where [ {_YML}.get("%input.getItem().getType()%") is set ]:
+                loop-value.getItem().hasItemMeta() is false:
+                    set {_Price} to {_YML}.get("%loop-value.getItem().getType()%")
+                    add item amount of loop-value * {_Price} to {_money}
+                   #
+                    set {_Name} to Translate.getMaterial(player, loop-value.getItem().getType())
+                    set {_amount} to item amount of loop-value
+                   #
+                    set {_List::%{_Name}%} to {_Name}
+                    add {_amount} to {_List::%{_Name}%::amount}
+                   #
+                    remove loop-value from player's inventory
+            if {check::%player%} is true:
+                loop all items in player's inventory where [ type of input is any shulker box ]:
+                    set {_item} to loop-value-1.getItem()
+                    set {_meta} to {_item}.getItemMeta()
+                    set {_BState} to {_meta}.getBlockState()
+                    set {_inv} to {_BState}.getInventory()
+                    loop 27 times:
+                        set {_Slot} to loop-value-2 - 1
+                        {_inv}.getItem({_Slot}).hasItemMeta() is false:
+                            {_YML}.get("%{_inv}.getItem({_Slot}).getType()%") is set:
+                                set {_Name} to Translate.getMaterial(player, {_inv}.getItem({_Slot}).getType())
+                                set {_amount} to {_inv}.getItem({_Slot}).getAmount()
+                                set {_List::%{_Name}%} to {_Name}
+                                add {_amount} to {_List::%{_Name}%::amount}
+                                set {_Price} to {_YML}.get("%{_inv}.getItem({_Slot}).getType()%")
+                                add {_inv}.getItem({_Slot}).getAmount() * {_Price} to {_money}
+                                {_inv}.setItem({_Slot},new ItemStack(Material.AIR))
+                    {_meta}.setBlockState({_BState})
+                    {_item}.setItemMeta({_meta})
+                    loop-value.setItem({_item})
+
+            {_money} is not set:
+                send "&f&l╭&c&l[&b&l!&c&l]&e&l◢ &c您的物品不足無法販售" to player
+                close player's inventory
+                play sound "minecraft:block.note_block.bass" to player
+                stop
+            add {_money} to account of player
+            set {_text} to "!"
+            loop {_List::*}:
+                set {_text} to "&b%{_text}%%nl%%loop-value% x %{_List::%loop-value%::amount}%"
+            replace all "!%nl%" in {_text} with ""
+            send formatted "{@System} &d交易明細 &7- &a&l[+] &e$%{_money}% &7| <tooltip:%{_text}%>&f&l[&c瞄準這裡查看販賣的內容&f&l]<reset>"
+            close player's inventory
+            play sound "minecraft:entity.item.pickup" to player
+            stop
+        clicked slot = 49:
+            close player's inventory
+            play sound "minecraft:entity.item.pickup" to player
+            stop
