@@ -1,5 +1,5 @@
 options:
-    Version: 2.0
+    Version: 2.2
     File: plugins/Skript/scripts/SellUI
 
 #==============================
@@ -84,6 +84,7 @@ function SellUI_reload():
         set {_save} to true
     {_save} is true:
         {_YML}.save({_File})
+        
     
 
 function checkVersion(p: Player = "!console" parsed as player):
@@ -153,9 +154,9 @@ command /SellUI [<text>] [<text>]:
                     set slot 9 - loop-value of {_inv} to black glass pane named "&0"
                     set slot 54 - loop-value of {_inv} to black glass pane named "&0"
                 if {check::%player%} is true:
-                    set slot 53 of {_inv} to cherry chest boat named "&f販售身上全部的物品&c ┓" with lore " " and "&b┗ &e點擊販售 &d包含界伏盒"
+                    set slot 53 of {_inv} to new ItemStack(Material.CHERRY_CHEST_BOAT,1) named "&f販售身上全部的物品&c ┓" with lore " " and "&b┗ &e點擊販售 &d包含界伏盒"
                 else:
-                    set slot 53 of {_inv} to cherry boat named "&f販售身上全部的物品&c ┓" with lore " " and "&b┗ &e點擊販售 &7不含界伏盒"
+                    set slot 53 of {_inv} to new ItemStack(Material.CHERRY_BOAT,1) named "&f販售身上全部的物品&c ┓" with lore " " and "&b┗ &e點擊販售 &7不含界伏盒"
                 set slot 49 of {_inv} to structure void named "&f關閉選單&c ┓" with lore " " and "&b┗ &e點擊關閉"
                 if {check::%player%} is true:
                     set slot 45 of {_inv} to axolotl bucket named "&f販售界伏盒物品&c ┓" with lore " " and "&b┗ &e目前狀態為 &a開啟"
