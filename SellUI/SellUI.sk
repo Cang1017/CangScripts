@@ -1,5 +1,5 @@
 options:
-    Version: 2.2
+    Version: 2.3
     File: plugins/Skript/scripts/SellUI
 
 #==============================
@@ -65,7 +65,7 @@ function SellUI_reload():
 
     set {_YML} to YamlConfiguration.loadConfiguration({_File})
     if {_YML}.isSet("Settings.System") is false:
-        {_YML}.set("Settings.System","&f&l╭&c&l[&b&l!&c&l]&e&l◢ ")
+        {_YML}.set("Settings.System","&f&l╭&c&l[&b&l!&c&l]&e&l◢")
         set {_save} to true
     if {_YML}.isSet("Settings.InvName") is false:
         {_YML}.set("Settings.InvName","&9&l物品販售選單")
@@ -122,7 +122,7 @@ command /SellUI [<text>] [<text>]:
         arg 1 is "reload":
             if player have permission "{@Permission_Reload}":
                 SellUI_reload()
-                send "{@System} &a重新載入完成."
+                send "{@System} &a重新載入完成"
                 checkVersion(player)
             stop
         arg 1 is "set":
@@ -182,11 +182,16 @@ command /SellUI [<text>] [<text>]:
                     set {_Price} to {_YML}.get("%{_items::%loop-value%::type}%")
                     set {_Name} to Translate.getMaterial(player, {_items::%loop-value%::type})
                     set {_amount} to {_items::%loop-value%::amount}
+                    set {_cost} to {_Price} * {_amount}
                     if {check::%player%} is true:
                         set slot {_pos} of {_inv} to loop-value named "&7&l| &f%{_Name}%" with lore "%nl%&f&l| &6販售單價 &7&l▸ &e$%{_Price}%%nl%%nl%&f&l| &b目前持有 &7&l▸ &cx %{_amount}% &d➩ 包含界伏盒%nl%%nl%&f&l| &a滑鼠左鍵或右鍵點擊販售" 
                     else:
                         set slot {_pos} of {_inv} to loop-value named "&7&l| &f%{_Name}%" with lore "%nl%&f&l| &6販售單價 &7&l▸ &e$%{_Price}%%nl%%nl%&f&l| &b目前持有 &7&l▸ &cx %{_amount}%%nl%%nl%&f&l| &a滑鼠左鍵或右鍵點擊販售" 
                     add 1 to {_pos}
+                if {_cost} is set:
+                    set slot 4 of {_inv} to paper named "&f總計賣出物品價值&c ┓" with lore " " and "&b┗ &e$%{_cost}%"
+                else:
+                    set slot 4 of {_inv} to paper named "&f總計賣出物品價值&c ┓" with lore " " and "&b┗ &c背包為空無法計算"    
                 stop
             else:
                 send "{@System} &c您沒有權限使用這個指令"
