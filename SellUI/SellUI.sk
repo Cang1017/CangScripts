@@ -1,5 +1,5 @@
 options:
-    Version: 2.3
+    Version: 2.4
     File: plugins/Skript/scripts/SellUI
 
 #==============================
@@ -182,16 +182,17 @@ command /SellUI [<text>] [<text>]:
                     set {_Price} to {_YML}.get("%{_items::%loop-value%::type}%")
                     set {_Name} to Translate.getMaterial(player, {_items::%loop-value%::type})
                     set {_amount} to {_items::%loop-value%::amount}
-                    set {_cost} to {_Price} * {_amount}
+                    set {_sum} to {_Price} * {_amount}
+                    set {_cost} to {_sum} + {_cost}
                     if {check::%player%} is true:
                         set slot {_pos} of {_inv} to loop-value named "&7&l| &f%{_Name}%" with lore "%nl%&f&l| &6販售單價 &7&l▸ &e$%{_Price}%%nl%%nl%&f&l| &b目前持有 &7&l▸ &cx %{_amount}% &d➩ 包含界伏盒%nl%%nl%&f&l| &a滑鼠左鍵或右鍵點擊販售" 
                     else:
                         set slot {_pos} of {_inv} to loop-value named "&7&l| &f%{_Name}%" with lore "%nl%&f&l| &6販售單價 &7&l▸ &e$%{_Price}%%nl%%nl%&f&l| &b目前持有 &7&l▸ &cx %{_amount}%%nl%%nl%&f&l| &a滑鼠左鍵或右鍵點擊販售" 
                     add 1 to {_pos}
                 if {_cost} is set:
-                    set slot 4 of {_inv} to paper named "&f總計賣出物品價值&c ┓" with lore " " and "&b┗ &e$%{_cost}%"
+                    set slot 4 of {_inv} to new ItemStack(Material.CHERRY_HANGING_SIGN,1) named "&f總計賣出物品價值&c ┓" with lore " " and "&b┗ &e$%{_cost}%"
                 else:
-                    set slot 4 of {_inv} to paper named "&f總計賣出物品價值&c ┓" with lore " " and "&b┗ &c背包為空無法計算"    
+                    set slot 4 of {_inv} to new ItemStack(Material.CHERRY_HANGING_SIGN,1) named "&f總計賣出物品價值&c ┓" with lore " " and "&b┗ &c目前無法計算結果"    
                 stop
             else:
                 send "{@System} &c您沒有權限使用這個指令"
