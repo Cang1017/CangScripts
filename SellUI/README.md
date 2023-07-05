@@ -2,11 +2,13 @@ SellUI V2.5
 ===
 使用GUI更快速賣出身上指定或所有的物品
 支援賣出界伏盒內的物品
+
 需要的插件
 ---
 + Skript
 + skript-reflect
 + Locale-API-1.0
+
 Config.yml
 --- 
 ```
@@ -19,6 +21,7 @@ Permission:
   Reload: SellUI.Admin
   Use: SellUI.Use
 ```
+
 作者
 ---
 + SE. (12Days_)
